@@ -1,0 +1,332 @@
+/*
+ * File: Breakout.java
+ * -------------------
+ * Name:
+ * Section Leader:
+ * 
+ * This file will eventually implement the game of Breakout.
+ */
+
+import acm.graphics.*;
+import acm.program.*;
+import acm.util.*;
+
+import java.applet.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.*;
+
+public class Breakout extends GraphicsProgram {
+
+/** Width and height of application window in pixels.  On some platforms 
+  * these may NOT actually be the dimensions of the graphics canvas. */
+  	private static final int TOT_N_BRICKS = 100;
+  	private int noBricksBroken = 0;
+	public static final int APPLICATION_WIDTH = 400;
+	public static final int APPLICATION_HEIGHT = 600;
+	private RandomGenerator rgen = RandomGenerator.getInstance();
+	private double vx, vy;
+	private GRect paddle;
+	private double lastX;
+	private static final int N_LIVES = 3;
+	private int noLives = N_LIVES;
+
+/** Dimensions of game board.  On some platforms these may NOT actually
+  * be the dimensions of the graphics canvas. */
+	private static final int WIDTH = APPLICATION_WIDTH;
+	private static final int HEIGHT = APPLICATION_HEIGHT;
+
+/** Dimensions of the paddle */
+	private static final int PADDLE_WIDTH = 60;
+	private static final int PADDLE_HEIGHT = 10;
+
+/** Offset of the paddle up from the bottom */
+	private static final int PADDLE_Y_OFFSET = 30;
+
+/**	No of rows of bricks of a particular color*/
+	private static final int NROWS_PER_COLOR = 2;
+
+/** Number of bricks per row */
+	private static final int NBRICKS_PER_ROW = 10;
+
+/** Number of rows of bricks */
+	private static final int NBRICK_ROWS = 10;
+
+/** Separation between bricks */
+	private static final int BRICK_SEP = 4;
+
+/** Width of a brick */
+	private static final int BRICK_WIDTH =
+	  (WIDTH - (NBRICKS_PER_ROW - 1) * BRICK_SEP) / NBRICKS_PER_ROW;
+
+/** Height of a brick */
+	private static final int BRICK_HEIGHT = 8;
+
+/** Radius of the ball in pixels */
+	private static final int BALL_RADIUS = 10;
+
+/** Offset of the top brick row from the top */
+	private static final int BRICK_Y_OFFSET = 70;
+
+/** Number of turns */
+	private static final int NTURNS = 3;
+	
+/**	Get CENTER - X and Y direction*/
+	private static final int CENTERX = WIDTH/2;
+	private static final int CENTERY = HEIGHT/2;
+
+/* Method: run() */
+/** Runs the Breakout program. */
+	public void run() {
+		addMouseListeners();
+		
+		setupGame();
+
+		GLabel starter = new GLabel("Click to Begin");
+		add(starter,CENTERX - starter.getWidth()/2,CENTERY - starter.getHeight()/2);
+		waitForClick();
+		remove(starter);
+		
+		playGame();
+	}
+	
+//	Color[] colors = new Color[5];
+//	colors[0] = Color.RED;
+//	colors[1] = Color.ORANGE;
+//	colors[2] = Color.YELLOW;
+//	colors[3] = Color.GREEN;
+//	colors[4] = Color.CYAN;
+	
+	
+	
+	private void setupGame()
+	{
+		setSize(APPLICATION_WIDTH,APPLICATION_HEIGHT);
+		for (int i=0; i<NROWS_PER_COLOR; ++i)
+			for (int j = 0; j< NBRICKS_PER_ROW; ++j)
+			{
+				GRect bricks = new GRect(BRICK_SEP/2 + j*(BRICK_WIDTH + BRICK_SEP), BRICK_Y_OFFSET+i*(BRICK_HEIGHT+ BRICK_SEP), BRICK_WIDTH, BRICK_HEIGHT);
+				bricks.setFilled(true);
+				bricks.setFillColor(Color.RED);
+				add(bricks);
+			}
+		
+		for (int i=NROWS_PER_COLOR; i<NROWS_PER_COLOR*2; ++i)
+			for (int j = 0; j< NBRICKS_PER_ROW; ++j)
+			{
+				GRect bricks = new GRect(BRICK_SEP/2 + j*(BRICK_WIDTH+ BRICK_SEP), BRICK_Y_OFFSET+i*(BRICK_HEIGHT+ BRICK_SEP), BRICK_WIDTH, BRICK_HEIGHT);
+				bricks.setFilled(true);
+				bricks.setFillColor(Color.ORANGE);
+				add(bricks);
+			}
+		
+		for (int i=NROWS_PER_COLOR*2; i<NROWS_PER_COLOR*3; ++i)
+			for (int j = 0; j< NBRICKS_PER_ROW; ++j)
+			{
+				GRect bricks = new GRect(BRICK_SEP/2 + j*(BRICK_WIDTH+ BRICK_SEP), BRICK_Y_OFFSET+i*(BRICK_HEIGHT+ BRICK_SEP), BRICK_WIDTH, BRICK_HEIGHT);
+				bricks.setFilled(true);
+				bricks.setFillColor(Color.YELLOW);
+				add(bricks);
+			}
+		
+		for (int i=NROWS_PER_COLOR*3; i<NROWS_PER_COLOR*4; ++i)
+			for (int j = 0; j< NBRICKS_PER_ROW; ++j)
+			{
+				GRect bricks = new GRect(BRICK_SEP/2 + j*(BRICK_WIDTH+ BRICK_SEP), BRICK_Y_OFFSET+i*(BRICK_HEIGHT+ BRICK_SEP), BRICK_WIDTH, BRICK_HEIGHT);
+				bricks.setFilled(true);
+				bricks.setFillColor(Color.GREEN);
+				add(bricks);
+			}
+		
+		for (int i=NROWS_PER_COLOR*4; i<NROWS_PER_COLOR*5; ++i)
+			for (int j = 0; j< NBRICKS_PER_ROW; ++j)
+			{
+				GRect bricks = new GRect(BRICK_SEP/2 + j*(BRICK_WIDTH+ BRICK_SEP), BRICK_Y_OFFSET+i*(BRICK_HEIGHT+ BRICK_SEP), BRICK_WIDTH, BRICK_HEIGHT);
+				bricks.setFilled(true);
+				bricks.setFillColor(Color.CYAN);
+				add(bricks);
+			}
+			
+		paddle = new GRect(0,getHeight()-PADDLE_Y_OFFSET-PADDLE_HEIGHT,PADDLE_WIDTH,PADDLE_HEIGHT);
+		paddle.setFilled(true);
+		paddle.setFillColor(Color.BLACK);
+		add(paddle);
+		
+	}
+/*----------------------------------------------------------------*/
+	
+
+	private void playGame()
+	{
+		int scorer = 0;
+		String score_str = "Score : "+scorer;
+		GLabel score = new GLabel(score_str,WIDTH,0);
+		score.setFont("sanserif-20");
+		double scor_wid = score.getWidth();
+		double scor_hig = score.getHeight();
+		score.move(-scor_wid*4/3,scor_hig);
+		add(score);
+	
+		GOval ball = new GOval(CENTERX - BALL_RADIUS,CENTERY - BALL_RADIUS, BALL_RADIUS*2,BALL_RADIUS*2);
+		ball.setFilled(true);
+		ball.setFillColor(Color.BLACK);
+		add(ball);
+//		remove(ball);
+
+/**	Velocities of BALL*/
+//		vx = -0.1;
+//		vy = -0.1;
+		double posnx_L = CENTERX - BALL_RADIUS;
+		double posnx_R = CENTERX + BALL_RADIUS;
+		
+		double posny_T = CENTERY - BALL_RADIUS;
+		double posny_B = CENTERY + BALL_RADIUS;
+		
+		vx = rgen.nextDouble(1.0,3.0);
+		if(rgen.nextBoolean(0.5))	vx = -vx;
+			
+		vy = rgen.nextDouble(1.0,3.0);
+		if(rgen.nextBoolean(0.5))	vy = -vy;
+		
+		GLabel lives = new GLabel("Lives : "+noLives);
+		lives.setFont("sanserif-20");
+		add(lives,5,lives.getHeight()+3);
+		
+		while(true)
+		{
+		
+			if(noLives == 0)
+			{
+				GLabel message_loss = new GLabel("BETTER LUCK NEXT TIME CHAMP");
+				message_loss.setFont("sanserif-20");
+
+				double los_wid = message_loss.getWidth();
+				double los_hig = message_loss.getHeight();
+					
+				add(message_loss,(CENTERX - los_wid/2),(CENTERY - los_hig/2));
+				return;
+			}
+//			int k = delay(1000000000);
+			pause(10);
+			ball.move(vx,vy);
+			posnx_L += vx;
+			posnx_R += vx;
+			posny_T += vy;
+			posny_B += vy;
+			
+			
+			if(posny_T <= 0)
+			{
+				vx = vx;
+				vy = -vy;
+			}
+			
+			if(posny_B >= HEIGHT)
+			{
+				noLives-- ;
+//				continue;
+				
+				ball.move(-posnx_L + CENTERX,-posny_T + CENTERY);
+				posnx_L += -posnx_L + CENTERX;
+				posnx_R += -posnx_R + CENTERX;
+				posny_T += -posny_T + CENTERY;
+				posny_B += -posny_B + CENTERY;
+//				noLives = 3;
+				lives.setLabel("Lives : "+noLives);
+				
+				GLabel starter = new GLabel("Click to Begin");
+				add(starter,CENTERX - starter.getWidth()/2,CENTERY - starter.getHeight()/2);
+				waitForClick();
+				remove(starter);
+				continue;
+			}
+			if(posnx_R >= WIDTH || posnx_L <= 0)
+			{
+				vx = -vx;
+				vy = vy;
+			}
+			GObject collider_Tl = getElementAt(posnx_L,posny_T);
+			GObject collider_Tr = getElementAt(posnx_R,posny_T);
+			GObject collider_Bl = getElementAt(posnx_L,posny_B);
+			GObject collider_Br = getElementAt(posnx_R,posny_B);
+			
+			if(collider_Tl != null)
+			{
+				vy = -vy;
+				if(collider_Tl == paddle)
+					continue;
+				remove(collider_Tl);
+				scorer += 1;
+				score_str = "Score : "+scorer;
+				score.setLabel(score_str);
+				noBricksBroken++;
+				continue;
+			}
+			if(collider_Tr != null)
+			{
+				vy = -vy;
+				if(collider_Tr == paddle)
+					continue;
+				remove(collider_Tr);
+				scorer += 1;
+				score_str = "Score : "+scorer;
+				score.setLabel(score_str);
+				noBricksBroken++;
+//				vy = -vy;
+				continue;
+			}
+			if(collider_Bl != null)
+			{
+				vy = -vy;
+				if(collider_Bl == paddle)
+					continue;
+				remove(collider_Bl);
+				scorer += 1;
+				score_str = "Score : "+scorer;
+				score.setLabel(score_str);
+				noBricksBroken++;
+//				vy = -vy;
+				continue;
+			}
+			if(collider_Br != null)
+			{
+				vy = -vy;
+				if(collider_Br == paddle)
+					continue;
+				remove(collider_Br);
+				scorer += 1;
+				score_str = "Score : "+scorer;
+				score.setLabel(score_str);
+				noBricksBroken++;
+//				vy = -vy;
+				continue;
+			}
+			
+			
+			
+			if(noBricksBroken == TOT_N_BRICKS)
+			{
+				GLabel win_label = new GLabel("YOU ARE THE SUPREME CHAMPION",CENTERX,CENTERY);
+				win_label.setFont("sanserif-20");
+				double wide = win_label.getWidth();
+				double high = win_label.getHeight();
+				win_label.move(-wide/2.0,-high/2.0);
+				add(win_label);
+				break;
+			}
+		}
+	}
+	
+	public void mouseClicked(MouseEvent e)
+	{
+	 lastX = e.getX();
+	}
+	
+	public void mouseMoved(MouseEvent e)
+	{
+		paddle.move(e.getX()-lastX,0);
+		lastX = e.getX();
+//		lastY = 
+	}
+
+}
