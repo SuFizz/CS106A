@@ -19,9 +19,9 @@ public class sudokuProfile implements sudokuConstants
 	public sudokuProfile(String filename, String names)
 	{
 		rgen = RandomGenerator.getInstance();
-		rgen.setSeed(1);
+//		rgen.setSeed();
 
-		numbers = new int[BOARD_SIZE][BOARD_SIZE];
+		numbers = new int[(int)BOARD_SIZE][(int)BOARD_SIZE];
 		
 		for(int i=0; i<BOARD_SIZE; ++i)
 			for(int j=0; j<BOARD_SIZE; ++j)
@@ -44,7 +44,7 @@ public class sudokuProfile implements sudokuConstants
 	{
 		for(int i=0; i<BOARD_SIZE; ++i)
 			for(int j=0; j<BOARD_SIZE; ++j)
-				{int num = (rgen.nextInt(-9,9));
+				{int num = (rgen.nextInt(-20,9));
 //				numbers[j][i] = num;}
 				boolean ty = addToBoard(j+1, i+1, num);}
 	}

@@ -17,10 +17,10 @@ public interface sudokuConstants{
 	public static final int APPLICATION_HEIGHT = 600;
 	
 	/**	The number of cells	*/
-	public static final double BOARD_SIZE = 9.0;
+	public static final int BOARD_SIZE = 9;
 	
 	/**	The number of cells in the BOX*/
-	public static final double BOX_SIZE = 3.0;
+	public static final int BOX_SIZE = 3;
 	
 	/**	Size of the TEXT FIELD FOR FILES*/
 	public static final int TEXT_FIELD_SIZE = 10;
